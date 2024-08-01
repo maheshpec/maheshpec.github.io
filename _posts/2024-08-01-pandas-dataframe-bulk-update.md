@@ -3,6 +3,7 @@ layout: post
 title:  "Filtering and updating a set of rows in pandas"
 date:   2024-08-01 15:19:51 -0700
 categories: pandas
+tags: pandas
 ---
 While working with pandas I had a use case where I had to filter a set of rows and update the values on all those rows at once. Doing apply was slow as I had to do the operation on a set of rows (think vectorization).
 
