@@ -14,12 +14,12 @@ is_row_new = df["embedding"].isnull()
 new_rows = df[is_row_new]
 ```
 
-2. I had to get the embedding for these rows as a batch. I stored these list of embeddings as `new_embeddings` 
+1. I had to get the embedding for these rows as a batch. I stored these list of embeddings as `new_embeddings` 
 ```python
 new_embeddings: list = create_new_embeddings(new_rows)
 ```
 
-3. Create a pandas `Series` and apply it back to the data frame
+1. Create a pandas `Series` and apply it back to the data frame
 ```python
 new_embedding_updates = pd.Series(new_embeddings, index=df.index[is_row_new])
 df["embedding"].update(new_embedding_updates)
