@@ -9,7 +9,7 @@ You use GitHub Copilot every day. You accept suggestions, you reject suggestions
 
 Most developers treat Copilot as a black box. A suggestion appears, you tab or you escape, and you move on. The problem is that the quality of Copilot's suggestions is almost entirely determined by *your* habits — what context you give it, how you structure your workspace, how you write the code that surrounds the cursor. Without auditing those habits, you have no way to improve them.
 
-There is a straightforward fix: capture your own Copilot session data and feed it to another AI model. What comes back is specific, personalized feedback that generic "Copilot tips" articles cannot give you.
+There is a straightforward fix: capture your own Copilot session data and ask Copilot Chat to analyze it. You already have the tool open. What comes back is specific, personalized feedback that generic "Copilot tips" articles cannot give you.
 
 ## How Copilot Works in Local Mode
 
@@ -53,7 +53,7 @@ Open the Output panel (`View > Output`) and select "GitHub Copilot Log" from the
 
 3. **Capture the log.** At the end of the session, copy the full content of the Output panel. Important: this content is not persisted to disk by default. You need to copy it before closing VS Code or clearing the panel. Paste it into a file alongside your session notes.
 
-4. **Feed it to an AI auditor.** Take the log and your notes and paste them into a large-context model — Claude, GPT-4, Gemini — with this prompt:
+4. **Open Copilot Chat and paste the log.** Open the Copilot Chat panel (`Ctrl+Shift+I` on Windows/Linux, `Cmd+Shift+I` on macOS) and paste your log and notes with this prompt. If the log is very long, trim it to the parts where you noticed the most rejections — Copilot Chat has a context limit and the noisiest segments are most useful anyway:
 
 ```text
 You are auditing a GitHub Copilot session log to help me improve my usage patterns.
@@ -109,4 +109,4 @@ This is optional and mainly useful if the debug logs are not giving you enough d
 
 ---
 
-Copilot suggestions are only as good as the context you give them, and most developers never measure whether they are giving good context. Running this audit once — even for a single 30-minute session — turns an opaque tool into something you can actually improve at.
+Copilot suggestions are only as good as the context you give them, and most developers never measure whether they are giving good context. The audit loop closes entirely inside VS Code: the same tool generating your suggestions can tell you why they were not good enough.
