@@ -9,7 +9,7 @@ You use GitHub Copilot every day. You accept suggestions, you reject suggestions
 
 Most developers treat Copilot as a black box. A suggestion appears, you tab or you escape, and you move on. The problem is that the quality of Copilot's suggestions is almost entirely determined by *your* habits — what context you give it, how you structure your workspace, how you write the code that surrounds the cursor. Without auditing those habits, you have no way to improve them.
 
-There is a straightforward fix: capture your own Copilot session data and ask Copilot Chat to analyze it. You already have the tool open. What comes back is specific, personalized feedback that generic "Copilot tips" articles cannot give you.
+There is a straightforward fix: ask Copilot Chat to analyze your session logs. VS Code has been writing them to disk every time you work. A pattern that shows up across a week of sessions is a real habit — one bad session is just noise.
 
 ## How Copilot Works in Local Mode
 
@@ -49,33 +49,43 @@ After a short debounce idle (default around 100ms), the payload is assembled and
 
 Open the Output panel (`View > Output`) and select "GitHub Copilot Log" from the dropdown. You will start seeing verbose entries for each completion request: context size, latency, and request details.
 
-2. **Run a real session.** Work normally for 30 to 60 minutes on actual code — not a toy project, but something representative of your day-to-day work. Note, roughly, which suggestions were useful and which you kept rejecting and rewriting.
+2. **Work normally for a few days.** Just code. VS Code is already writing a `GitHub Copilot.log` file for every session in the background. You do not need to do anything special. If you want to jot down notes on sessions where suggestions were particularly good or bad, that adds useful signal — but it is optional.
 
-3. **Find the log file.** VS Code writes Output channel content to disk automatically. Open `Help > Open Logs Folder` — this takes you to the VS Code logs directory for the current session. Inside the `exthost1/` subfolder, look for a file named `GitHub Copilot.log`. That file is your session log, already on disk, no copy-paste needed.
+3. **Find your session logs.** Open `Help > Open Logs Folder`. VS Code creates a timestamped subdirectory for each window session:
 
-4. **Open Copilot Chat and attach the log.** Open the Copilot Chat panel (`Ctrl+Shift+I` on Windows/Linux, `Cmd+Shift+I` on macOS). Type `#file:` and select the log file from step 3, then append this prompt:
+```
+~/.config/Code/logs/
+  20260225T090000/exthost1/GitHub Copilot.log
+  20260226T093000/exthost1/GitHub Copilot.log
+  20260227T091500/exthost1/GitHub Copilot.log
+```
+
+Pick the logs from your last several working days. The more sessions you include, the more confidently patterns separate from one-off noise.
+
+4. **Open Copilot Chat and attach the logs.** Open the Copilot Chat panel (`Ctrl+Shift+I` on Windows/Linux, `Cmd+Shift+I` on macOS). Type `#file:` once for each log file to attach them, then append this prompt:
 
 ```text
-Analyze the attached Copilot session log and help me improve my usage patterns.
+Analyze the attached Copilot session logs (multiple sessions) and identify patterns
+in my usage that I can improve.
 
 Copilot works by sending the text above and below my cursor (fill-in-the-middle) plus
 snippets from other open files (ranked by token similarity) to a completion API.
 Suggestion quality depends on: context density around the cursor, which related
 files are open in the editor, and whether the language server is reporting errors.
 
-My notes from this session:
-- [Where suggestions were accurate and useful]
-- [Where I kept rejecting and rewriting]
-- [What I was building]
+Optional notes I kept across these sessions:
+- [Sessions where suggestions were accurate and useful]
+- [Sessions where I kept rejecting and rewriting]
+- [What kinds of tasks I was working on]
 
 Please tell me:
-1. When did context quality appear weakest, and why?
-2. What workspace habits would have improved the suggestions?
-3. Were there patterns when suggestions were rejected?
-4. Give me 3 specific, actionable changes to my workflow.
+1. What patterns appear consistently across sessions where context quality was weakest?
+2. What workspace habits would have improved suggestions across these sessions?
+3. Are there recurring situations where suggestions were likely rejected?
+4. Give me 3 specific, actionable changes to my workflow based on what you see across all sessions.
 ```
 
-5. **Act on the output.** The analysis will surface patterns specific to your session. Common findings: editing isolated functions with no type imports visible, switching files frequently before context stabilizes, writing imperative comments ("do X") rather than descriptive context ("this function handles Y so that Z"). Each finding maps directly to a habit you can change.
+5. **Act on the output.** Findings that appear across multiple sessions are the ones worth acting on first. Common recurring patterns: editing isolated functions with no type imports visible, switching files frequently before context stabilizes, writing imperative comments ("do X") rather than descriptive context ("this function handles Y so that Z"). Each maps directly to a habit you can change.
 
 ## Workspace Hygiene — The Quick Wins
 
