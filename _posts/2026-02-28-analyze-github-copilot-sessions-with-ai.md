@@ -51,22 +51,17 @@ Open the Output panel (`View > Output`) and select "GitHub Copilot Log" from the
 
 2. **Run a real session.** Work normally for 30 to 60 minutes on actual code — not a toy project, but something representative of your day-to-day work. Note, roughly, which suggestions were useful and which you kept rejecting and rewriting.
 
-3. **Capture the log.** At the end of the session, copy the full content of the Output panel. Important: this content is not persisted to disk by default. You need to copy it before closing VS Code or clearing the panel. Paste it into a file alongside your session notes.
+3. **Find the log file.** VS Code writes Output channel content to disk automatically. Open `Help > Open Logs Folder` — this takes you to the VS Code logs directory for the current session. Inside the `exthost1/` subfolder, look for a file named `GitHub Copilot.log`. That file is your session log, already on disk, no copy-paste needed.
 
-4. **Open Copilot Chat and paste the log.** Open the Copilot Chat panel (`Ctrl+Shift+I` on Windows/Linux, `Cmd+Shift+I` on macOS) and paste your log and notes with this prompt. If the log is very long, trim it to the parts where you noticed the most rejections — Copilot Chat has a context limit and the noisiest segments are most useful anyway:
+4. **Open Copilot Chat and attach the log.** Open the Copilot Chat panel (`Ctrl+Shift+I` on Windows/Linux, `Cmd+Shift+I` on macOS). Type `#file:` and select the log file from step 3, then append this prompt:
 
 ```text
-You are auditing a GitHub Copilot session log to help me improve my usage patterns.
+Analyze the attached Copilot session log and help me improve my usage patterns.
 
 Copilot works by sending the text above and below my cursor (fill-in-the-middle) plus
 snippets from other open files (ranked by token similarity) to a completion API.
 Suggestion quality depends on: context density around the cursor, which related
 files are open in the editor, and whether the language server is reporting errors.
-
-Here is my session log:
----
-[PASTE LOG HERE]
----
 
 My notes from this session:
 - [Where suggestions were accurate and useful]
