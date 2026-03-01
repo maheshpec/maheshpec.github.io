@@ -87,6 +87,24 @@ Please tell me:
 
 5. **Act on the output.** Findings that appear across multiple sessions are the ones worth acting on first. Common recurring patterns: editing isolated functions with no type imports visible, switching files frequently before context stabilizes, writing imperative comments ("do X") rather than descriptive context ("this function handles Y so that Z"). Each maps directly to a habit you can change.
 
+## Managing Context Length
+
+Debug logs grow fast. A single productive coding day with DEBUG-level logging enabled will produce a `GitHub Copilot.log` in the 2–10 MB range — roughly 500K to 2.5M tokens. Stack several sessions together and you will blow past the context window of any model currently available in Copilot Chat before the analysis even starts.
+
+**Switch to a premium model before attaching files.** In the Copilot Chat panel, click the model selector (bottom-left of the input box) and choose the highest-context option you have access to. As of early 2026, Claude Sonnet offers the largest context window (200K tokens), followed by GPT-4o at 128K. The default models used for quick chat are smaller and will silently truncate large inputs — dropping the earliest sessions and giving you a skewed picture of your patterns.
+
+**Trim the logs before attaching.** You do not need every line — just the events that describe what happened at each completion. This command extracts the signal from all recent session logs into one file:
+
+```bash
+grep -iE "accept|reject|latency|contextSize|token|completion" \
+  ~/.config/Code/logs/*/exthost1/"GitHub Copilot.log" \
+  > ~/copilot-audit.txt
+```
+
+The result is typically 5–20× smaller than the raw logs and contains everything needed for pattern analysis. Attach `~/copilot-audit.txt` with `#file:` instead of the individual session files.
+
+If the trimmed file is still over a few MB, split it by date range and run two separate analyses — one on older sessions, one on recent. The model produces more reliable output on 10K focused lines than on 200K lines it had to aggressively compress to fit.
+
 ## Workspace Hygiene — The Quick Wins
 
 Based on the internals above, these changes help immediately without any tooling setup:
