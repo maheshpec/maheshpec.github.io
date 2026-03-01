@@ -11,27 +11,17 @@ Most developers treat Copilot as a black box. A suggestion appears, you tab or y
 
 There is a straightforward fix: ask Copilot Chat to analyze your session logs. VS Code has been writing them to disk every time you work. A pattern that shows up across a week of sessions is a real habit — one bad session is just noise.
 
-## How Copilot Works in Local Mode
+## How Copilot Decides What to Suggest
 
-Before you can audit your sessions, you need to understand what Copilot is actually doing — as of early 2026. The details below apply to the VS Code extension in standard local use.
+Copilot does not just read the file you are editing. For each suggestion, it pulls context from two places:
 
-**The context payload**
+**What's around your cursor.** Everything above and below the insertion point goes into the prompt. A function with a meaningful name, typed parameters, and a short comment describing its goal gives Copilot far more to work with than an empty stub.
 
-Copilot does not just read your current file. For every completion request, the extension assembles a payload using fill-in-the-middle (FIM) format: a prefix block (everything above your cursor), a suffix block (everything below), and a `<MID>` marker where the completion should be inserted. This gives the model bidirectional context — it knows not just where you have been but where you are going.
+**Your other open files.** Copilot scans your open buffers and pulls in snippets from the ones most related to what you are currently writing. If your types, interfaces, or related modules are open in other tabs, they are more likely to show up in the suggestion context. If you have 20 unrelated files open, the useful ones get crowded out.
 
-The payload also includes snippets from other open editor buffers. These "neighboring documents" are scored by Jaccard similarity against the current cursor context, tokenized, and the top-ranked ones are prepended to the prompt as `// Path: ...` labeled blocks. The entire payload is bounded by a token budget — typically 2048 to 8192 tokens depending on your Copilot tier. When the budget runs out, lower-scored neighbor snippets are dropped first.
+**Your language server's health.** Type errors, unresolved imports, and misconfigured environments are visible to Copilot and degrade what it can infer. A clean error panel means cleaner suggestions.
 
-The direct implication: suggestion quality is a direct function of what files you have open and how much typed context surrounds your cursor. If you are editing a blank function in an isolated file, Copilot is working with almost nothing.
-
-**The LSP layer**
-
-The extension registers as a `vscode.languages.registerInlineCompletionItemProvider`. This gives it access to the VS Code language server: resolved types, hover information, workspace symbol resolution, and diagnostics (errors and warnings in your current files).
-
-A healthy language server means richer context. If your TypeScript project has type errors, or your Python environment is misconfigured so the LSP cannot resolve imports, that diagnostic state is visible to Copilot and degrades the quality of what it can infer about your code.
-
-**How suggestions fire and what gets logged**
-
-After a short debounce idle (default around 100ms), the payload is assembled and sent to `api.githubcopilot.com` over HTTPS. The response streams back as Server-Sent Events. Accepted and rejected suggestions are telemetry events — but the same data is locally observable through VS Code's Output panel, which is exactly what we will use.
+The practical upshot: suggestion quality is largely a function of what you have open and how much context surrounds the cursor.
 
 ## The Optimization Workflow
 
@@ -68,10 +58,10 @@ Pick the logs from your last several working days. The more sessions you include
 Analyze the attached Copilot session logs (multiple sessions) and identify patterns
 in my usage that I can improve.
 
-Copilot works by sending the text above and below my cursor (fill-in-the-middle) plus
-snippets from other open files (ranked by token similarity) to a completion API.
-Suggestion quality depends on: context density around the cursor, which related
-files are open in the editor, and whether the language server is reporting errors.
+Copilot works by sending the text around my cursor plus snippets from other open
+files to a completion API. Suggestion quality depends on: how much useful context
+surrounds the cursor, which related files are open in the editor, and whether the
+language server is reporting errors.
 
 Optional notes I kept across these sessions:
 - [Sessions where suggestions were accurate and useful]
@@ -110,25 +100,9 @@ If the trimmed file is still over a few MB, split it by date range and run two s
 Based on the internals above, these changes help immediately without any tooling setup:
 
 - **Keep related files open.** Copilot picks the most relevant open buffers using similarity scoring. If you have your interfaces, types, and the file you are editing open at the same time, the neighbor snippets are far more useful than if you have 20 unrelated tabs cluttering the workspace.
-- **Write signatures before bodies.** FIM uses both prefix and suffix. A function with a name, parameter types, a return type, and a one-line comment describing its goal is a far richer context signal than an empty stub. Write the skeleton first.
-- **Resolve LSP errors before a session.** TypeScript errors, unresolved imports, or a broken Python environment thin out the language server context. A clean error panel before you start means Copilot has cleaner type information to work with.
-- **Use meaningful names in surrounding scope.** The similarity-based retrieval that selects which neighbor snippets to include responds to token overlap. If your surrounding code uses descriptive, domain-specific names, the right context files rank higher.
-
-## Going Deeper — Intercepting the Raw Payloads
-
-If you want to see exactly what Copilot sends to the API rather than inferring it from logs, a local HTTPS proxy gives you the raw request and response JSON. With [mitmproxy](https://mitmproxy.org/) running locally:
-
-```bash
-# Start mitmproxy on port 8080
-mitmproxy --listen-port 8080 --ssl-insecure
-
-# Configure VS Code to route through it (in settings.json)
-# "http.proxy": "http://localhost:8080"
-```
-
-The request body will show the `prompt` field (the assembled FIM prefix), `suffix`, and `extra.neighbors` — the actual neighbor snippets that were included. Seeing which files made it into the payload and which were excluded is the most direct way to understand what context Copilot had for any given suggestion.
-
-This is optional and mainly useful if the debug logs are not giving you enough detail. The traffic stays on your machine — you are not routing it anywhere new by intercepting it locally.
+- **Write signatures before bodies.** Copilot reads both above and below the cursor. A function with a name, parameter types, a return type, and a one-line comment describing its goal is a far richer signal than an empty stub. Write the skeleton first.
+- **Resolve errors before a session.** TypeScript errors, unresolved imports, or a broken Python environment degrade what Copilot can infer about your code. A clean error panel before you start means cleaner suggestions throughout.
+- **Use meaningful names in surrounding scope.** Copilot picks related open files based on vocabulary overlap with what you are writing. Descriptive, domain-specific names make it more likely the right context files get pulled in.
 
 ---
 
