@@ -5,23 +5,21 @@ date: 2026-02-28 10:00:00 +0000
 categories: productivity
 tags: github-copilot ai developer-tools vscode
 ---
-You use GitHub Copilot every day. You accept suggestions, you reject suggestions, you occasionally swear at suggestions. But do you ever stop and ask: am I actually getting the most out of this tool, or am I just using it on autopilot?
+You use GitHub Copilot every day. You accept suggestions, you reject suggestions, you occasionally swear at suggestions. You kick off agentic edits that rewrite half a file and then spend ten minutes undoing them. But do you ever stop and ask: am I actually getting the most out of this tool, or am I just using it on autopilot?
 
-Most developers treat Copilot as a black box. A suggestion appears, you tab or you escape, and you move on. The problem is that the quality of Copilot's suggestions is almost entirely determined by *your* habits — what context you give it, how you structure your workspace, how you write the code that surrounds the cursor. Without auditing those habits, you have no way to improve them.
+Most developers treat Copilot as a black box. A suggestion appears, you tab or you escape, and you move on. You type a task into Copilot Edits and accept whatever comes back. The problem is that the quality of everything Copilot produces — inline completions, multi-line generations, agentic edits across multiple files — is almost entirely determined by *your* habits: what context you give it, how you scope your tasks, how you structure your workspace. Without auditing those habits, you have no way to improve them.
 
 There is a straightforward fix: ask Copilot Chat to analyze your session logs. VS Code has been writing them to disk every time you work. A pattern that shows up across a week of sessions is a real habit — one bad session is just noise.
 
-## How Copilot Decides What to Suggest
+## How Copilot Builds Context
 
-Copilot does not just read the file you are editing. For each suggestion, it pulls context from two places:
+Copilot works in two distinct modes and each one determines quality differently.
 
-**What's around your cursor.** Everything above and below the insertion point goes into the prompt. A function with a meaningful name, typed parameters, and a short comment describing its goal gives Copilot far more to work with than an empty stub.
+**Inline completions** trigger as you type. Copilot reads everything above and below the cursor in the current file, then pulls in snippets from your other open buffers — favouring the ones most related to what you are writing. A function with a meaningful name, typed parameters, and a short comment gives it far more to work with than an empty stub. If you have 20 unrelated files open, the useful ones get crowded out by the noise.
 
-**Your other open files.** Copilot scans your open buffers and pulls in snippets from the ones most related to what you are currently writing. If your types, interfaces, or related modules are open in other tabs, they are more likely to show up in the suggestion context. If you have 20 unrelated files open, the useful ones get crowded out.
+**Agentic and multi-line generations** (Copilot Edits, agent mode, long chat responses) work differently. Here the model has a much larger context window and is driven by what you explicitly provide: your task description, the files you add to the working set, and the conversation history. It can also read additional files on its own to complete the task. The limiting factor is not cursor position — it is task clarity. A vague "refactor this" produces different output than "extract the validation logic from UserService into a separate Validator class, keeping the existing public method signatures."
 
-**Your language server's health.** Type errors, unresolved imports, and misconfigured environments are visible to Copilot and degrade what it can infer. A clean error panel means cleaner suggestions.
-
-The practical upshot: suggestion quality is largely a function of what you have open and how much context surrounds the cursor.
+**Language server health affects both modes.** Type errors, unresolved imports, and misconfigured environments degrade what Copilot can infer regardless of which mode you are in. A clean error panel is a baseline requirement, not an optional nicety.
 
 ## The Optimization Workflow
 
@@ -56,26 +54,28 @@ Pick the logs from your last several working days. The more sessions you include
 
 ```text
 Analyze the attached Copilot session logs (multiple sessions) and identify patterns
-in my usage that I can improve.
+in my usage that I can improve. I use both inline completions and agentic/multi-line
+generations (Copilot Edits, agent mode).
 
-Copilot works by sending the text around my cursor plus snippets from other open
-files to a completion API. Suggestion quality depends on: how much useful context
-surrounds the cursor, which related files are open in the editor, and whether the
-language server is reporting errors.
+For inline completions: quality depends on how much useful context surrounds the cursor
+and which related files are open. For agentic generations: quality depends on task
+description clarity, how well I scope the working set, and whether I break large tasks
+into focused steps.
 
 Optional notes I kept across these sessions:
-- [Sessions where suggestions were accurate and useful]
-- [Sessions where I kept rejecting and rewriting]
+- [Sessions where inline suggestions were accurate and useful]
+- [Sessions where I kept rejecting or heavily editing inline completions]
+- [Agentic tasks that needed significant rework after generation]
 - [What kinds of tasks I was working on]
 
 Please tell me:
-1. What patterns appear consistently across sessions where context quality was weakest?
-2. What workspace habits would have improved suggestions across these sessions?
-3. Are there recurring situations where suggestions were likely rejected?
-4. Give me 3 specific, actionable changes to my workflow based on what you see across all sessions.
+1. For inline completions — what patterns appear consistently when context quality was weakest?
+2. For agentic generations — were there patterns where task descriptions led to off-target output or excess rework?
+3. Were there recurring situations where I should have broken a large agentic task into smaller steps?
+4. Give me 3 specific, actionable changes to my workflow — covering both completion and agentic usage.
 ```
 
-5. **Act on the output.** Findings that appear across multiple sessions are the ones worth acting on first. Common recurring patterns: editing isolated functions with no type imports visible, switching files frequently before context stabilizes, writing imperative comments ("do X") rather than descriptive context ("this function handles Y so that Z"). Each maps directly to a habit you can change.
+5. **Act on the output.** Findings that appear across multiple sessions are the ones worth acting on first. For completions, common patterns include editing isolated functions with no related types visible, or switching files before context stabilises. For agentic work, the patterns tend to be vague task descriptions ("clean this up"), working sets that are too broad, or large tasks that should have been split into two or three focused requests. Each finding maps directly to a habit you can change.
 
 ## Managing Context Length
 
@@ -97,13 +97,24 @@ If the trimmed file is still over a few MB, split it by date range and run two s
 
 ## Workspace Hygiene — The Quick Wins
 
-Based on the internals above, these changes help immediately without any tooling setup:
+These changes help immediately without any tooling setup.
 
-- **Keep related files open.** Copilot picks the most relevant open buffers using similarity scoring. If you have your interfaces, types, and the file you are editing open at the same time, the neighbor snippets are far more useful than if you have 20 unrelated tabs cluttering the workspace.
-- **Write signatures before bodies.** Copilot reads both above and below the cursor. A function with a name, parameter types, a return type, and a one-line comment describing its goal is a far richer signal than an empty stub. Write the skeleton first.
-- **Resolve errors before a session.** TypeScript errors, unresolved imports, or a broken Python environment degrade what Copilot can infer about your code. A clean error panel before you start means cleaner suggestions throughout.
-- **Use meaningful names in surrounding scope.** Copilot picks related open files based on vocabulary overlap with what you are writing. Descriptive, domain-specific names make it more likely the right context files get pulled in.
+**For inline completions:**
+
+- **Keep related files open.** Copilot pulls snippets from your open buffers. If your types, interfaces, and the file you are editing are open at the same time, the context is far more useful than if 20 unrelated tabs are cluttering the workspace.
+- **Write signatures before bodies.** Copilot reads both above and below the cursor. A function with a name, typed parameters, a return type, and a one-line comment is a far richer signal than an empty stub. Write the skeleton first.
+- **Use meaningful names in surrounding scope.** Copilot picks related files based on vocabulary overlap with what you are writing. Descriptive, domain-specific names make it more likely the right files get pulled in.
+
+**For agentic and multi-line generations:**
+
+- **Describe the goal and the constraints, not just the steps.** "Extract the validation logic from UserService into a Validator class, keeping the existing method signatures" outperforms "refactor UserService". The model needs to know what must not change as much as what should.
+- **Scope your working set tightly.** In Copilot Edits, add only the files directly relevant to the task. A narrow working set means fewer irrelevant edits and faster iteration.
+- **Break large tasks into focused requests.** A task that touches five subsystems in one pass is likely to produce something that needs significant rework. Two or three focused requests with a review step in between reliably produce better output than one ambitious prompt.
+
+**For both:**
+
+- **Resolve errors before you start.** TypeScript errors, unresolved imports, or a broken Python environment degrade what Copilot can infer regardless of which mode you are in. A clean error panel is a baseline, not an optional nicety.
 
 ---
 
-Copilot suggestions are only as good as the context you give them, and most developers never measure whether they are giving good context. The audit loop closes entirely inside VS Code: the same tool generating your suggestions can tell you why they were not good enough.
+Copilot output — whether it is a one-line completion or a multi-file agentic edit — is only as good as the context and task framing you give it. Most developers never measure either. The audit loop closes entirely inside VS Code: the same tool generating your completions and edits can tell you why they were not good enough.
